@@ -12,19 +12,26 @@ export function parseDuckyScript(input: string): DuckyAst {
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
+    if (raw == null) continue;
     const line = raw.trim();
     if (!line || line.startsWith('REM')) continue;
 
     const [cmd, ...rest] = line.split(/\s+/);
+    if (!cmd) continue;
     const upper = cmd.toUpperCase();
 
     if (upper === 'STRING') {
-      const args = [raw.slice(raw.toUpperCase().indexOf('STRING') + 6).trimStart()];
+      const idx = raw.toUpperCase().indexOf('STRING');
+      const args = [idx >= 0 ? raw.slice(idx + 6).trimStart() : ''];
       commands.push({ type: 'STRING', args });
       continue;
     }
 
     if (upper === 'DELAY') {
+      if (!rest[0]) {
+        errors.push(`Line ${i + 1}: DELAY requires a number`);
+        continue;
+      }
       const ms = parseInt(rest[0], 10);
       if (Number.isFinite(ms)) commands.push({ type: 'DELAY', args: [String(ms)] });
       else errors.push(`Line ${i + 1}: DELAY requires a number`);
@@ -32,6 +39,10 @@ export function parseDuckyScript(input: string): DuckyAst {
     }
 
     if (upper === 'REPEAT') {
+      if (!rest[0]) {
+        errors.push(`Line ${i + 1}: REPEAT requires positive number`);
+        continue;
+      }
       const n = parseInt(rest[0], 10);
       if (!Number.isFinite(n) || n < 1) {
         errors.push(`Line ${i + 1}: REPEAT requires positive number`);
@@ -42,7 +53,7 @@ export function parseDuckyScript(input: string): DuckyAst {
         continue;
       }
       const last = commands[commands.length - 1];
-      for (let j = 0; j < n; j++) commands.push({ ...last });
+      for (let j = 0; j < n; j++) commands.push({ type: last.type, args: [...last.args] });
       continue;
     }
 

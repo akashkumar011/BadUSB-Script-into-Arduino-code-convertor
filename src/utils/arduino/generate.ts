@@ -41,14 +41,14 @@ export function generateArduinoSketch(opts: GenerateOpts): string {
   for (const c of ast.commands) {
     switch (c.type) {
       case 'STRING':
-        lines.push(`  typeString(${JSON.stringify(c.args[0])});\n`);
+        lines.push(`  typeString(${JSON.stringify(c.args[0] ?? '')});\n`);
         break;
       case 'DELAY':
-        lines.push(`  delay(${c.args[0]});\n`);
+        lines.push(`  delay(${c.args[0] ?? '0'});\n`);
         break;
       case 'MOD': {
-        const keys = c.args.filter(Boolean);
-        const last = keys[keys.length - 1];
+        const keys = (c.args || []).filter(Boolean);
+        const last = keys[keys.length - 1] ?? '';
         const mods = keys.slice(0, -1).map(k => mapMod(k)).filter(Boolean);
         for (const m of mods) lines.push(`  Keyboard.press(${m});\n`);
         lines.push(`  Keyboard.press(${mapKey(last)});\n  delay(5);\n  Keyboard.releaseAll();\n`);
