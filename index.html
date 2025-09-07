@@ -6,11 +6,476 @@
     <title>Duckify+ — BadUSB to Arduino</title>
     <meta name="description" content="Convert DuckyScript/BadUSB scripts into Arduino code with an enhanced UI." />
     <link rel="icon" href="/favicon.ico" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        background-color: #f5f5f5;
+        color: #333;
+        line-height: 1.6;
+      }
+      
+      .app-bar {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid #e0e0e0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        padding: 0 24px;
+      }
+      
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      
+      .title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1976d2;
+      }
+      
+      .toolbar-actions {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .icon-btn {
+        background: none;
+        border: none;
+        padding: 8px;
+        border-radius: 50%;
+        cursor: pointer;
+        color: #666;
+        transition: all 0.2s;
+      }
+      
+      .icon-btn:hover {
+        background-color: #f0f0f0;
+        color: #1976d2;
+      }
+      
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+      
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      
+      .section {
+        background: white;
+        border-radius: 8px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      
+      .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: #333;
+      }
+      
+      .textarea {
+        width: 100%;
+        min-height: 400px;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: vertical;
+        background: #fafafa;
+      }
+      
+      .textarea:focus {
+        outline: none;
+        border-color: #1976d2;
+        box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+      }
+      
+      .controls {
+        display: flex;
+        gap: 16px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+      }
+      
+      .select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: white;
+        font-size: 14px;
+        min-width: 200px;
+      }
+      
+      .select:focus {
+        outline: none;
+        border-color: #1976d2;
+      }
+      
+      .error {
+        color: #d32f2f;
+        background: #ffebee;
+        padding: 12px;
+        border-radius: 4px;
+        margin-top: 16px;
+        font-size: 14px;
+      }
+      
+      .actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .btn-outlined {
+        background: white;
+        border: 1px solid #1976d2;
+        color: #1976d2;
+      }
+      
+      .btn-outlined:hover {
+        background: #f3f8ff;
+      }
+      
+      .btn-contained {
+        background: #1976d2;
+        color: white;
+      }
+      
+      .btn-contained:hover {
+        background: #1565c0;
+      }
+      
+      .divider {
+        height: 1px;
+        background: #e0e0e0;
+        margin: 24px 0;
+      }
+      
+      .description {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      
+      .readonly {
+        background: #f8f9fa;
+        color: #666;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="app-bar">
+      <div class="toolbar">
+        <div class="title">Duckify+ — BadUSB to Arduino</div>
+        <div class="toolbar-actions">
+          <button class="icon-btn" onclick="resetScript()" title="Reset example">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+          </button>
+          <button class="icon-btn" onclick="copyCode()" title="Copy Arduino code">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+            </svg>
+          </button>
+          <button class="icon-btn" onclick="downloadCode()" title="Download .ino" style="color: #1976d2;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="grid">
+        <div class="section">
+          <div class="section-title">DuckyScript</div>
+          <textarea id="scriptInput" class="textarea" placeholder="Paste your DuckyScript here">REM Example DuckyScript
+DELAY 500
+STRING Hello, world!
+ENTER</textarea>
+          <div class="controls">
+            <select id="layoutSelect" class="select">
+              <option value="us">US Keyboard Layout</option>
+              <option value="de">DE Keyboard Layout</option>
+              <option value="uk">UK Keyboard Layout</option>
+            </select>
+            <select id="deviceSelect" class="select">
+              <option value="leonardo">Arduino Leonardo</option>
+              <option value="proMicro">Arduino Pro Micro</option>
+              <option value="duemilanove">Arduino Duemilanove</option>
+            </select>
+          </div>
+          <div id="errors" class="error" style="display: none;"></div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">Arduino Sketch Preview</div>
+          <textarea id="arduinoOutput" class="textarea readonly" readonly></textarea>
+          <div class="actions">
+            <button class="btn btn-outlined" onclick="copyCode()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+              </svg>
+              Copy
+            </button>
+            <button class="btn btn-contained" onclick="downloadCode()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+              </svg>
+              Download .ino
+            </button>
+          </div>
+          <div class="divider"></div>
+          <div class="description">
+            Inspired by Duckify. This tool converts a subset of DuckyScript (STRING, DELAY, ENTER, GUI, ALT, CTRL, SHIFT, WINDOWS, MENU, etc.) into Arduino code using Keyboard.h.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const SAMPLE_SCRIPT = `REM Example DuckyScript
+DELAY 500
+STRING Hello, world!
+ENTER`;
+
+      const SIMPLE_COMMANDS = new Set(['ENTER','RETURN','TAB','ESC','ESCAPE','SPACE','BACKSPACE','DELETE','UP','DOWN','LEFT','RIGHT','HOME','END','PAGEUP','PAGEDOWN','CAPSLOCK','SCROLLLOCK','NUMLOCK','PAUSE','INSERT','PRINTSCREEN','MENU','APP','WINDOWS','GUI']);
+
+      const KEY_MAP = {
+        ENTER: 'KEY_RETURN',
+        RETURN: 'KEY_RETURN',
+        TAB: 'KEY_TAB',
+        ESC: 'KEY_ESC',
+        ESCAPE: 'KEY_ESC',
+        SPACE: ' ',
+        BACKSPACE: 'KEY_BACKSPACE',
+        DELETE: 'KEY_DELETE',
+        UP: 'KEY_UP_ARROW',
+        DOWN: 'KEY_DOWN_ARROW',
+        LEFT: 'KEY_LEFT_ARROW',
+        RIGHT: 'KEY_RIGHT_ARROW',
+        HOME: 'KEY_HOME',
+        END: 'KEY_END',
+        PAGEUP: 'KEY_PAGE_UP',
+        PAGEDOWN: 'KEY_PAGE_DOWN',
+        MENU: 'KEY_MENU'
+      };
+
+      function parseDuckyScript(input) {
+        const commands = [];
+        const errors = [];
+        const lines = input.split(/\r?\n/);
+
+        for (let i = 0; i < lines.length; i++) {
+          const raw = lines[i];
+          if (raw == null) continue;
+          const line = raw.trim();
+          if (!line || line.startsWith('REM')) continue;
+
+          const [cmd, ...rest] = line.split(/\s+/);
+          if (!cmd) continue;
+          const upper = cmd.toUpperCase();
+
+          if (upper === 'STRING') {
+            const idx = raw.toUpperCase().indexOf('STRING');
+            const args = [idx >= 0 ? raw.slice(idx + 6).trimStart() : ''];
+            commands.push({ type: 'STRING', args });
+            continue;
+          }
+
+          if (upper === 'DELAY') {
+            if (!rest[0]) {
+              errors.push(`Line ${i + 1}: DELAY requires a number`);
+              continue;
+            }
+            const ms = parseInt(rest[0], 10);
+            if (Number.isFinite(ms)) commands.push({ type: 'DELAY', args: [String(ms)] });
+            else errors.push(`Line ${i + 1}: DELAY requires a number`);
+            continue;
+          }
+
+          if (upper === 'REPEAT') {
+            if (!rest[0]) {
+              errors.push(`Line ${i + 1}: REPEAT requires positive number`);
+              continue;
+            }
+            const n = parseInt(rest[0], 10);
+            if (!Number.isFinite(n) || n < 1) {
+              errors.push(`Line ${i + 1}: REPEAT requires positive number`);
+              continue;
+            }
+            if (commands.length === 0) {
+              errors.push(`Line ${i + 1}: REPEAT without previous command`);
+              continue;
+            }
+            const last = commands[commands.length - 1];
+            for (let j = 0; j < n; j++) commands.push({ type: last.type, args: [...last.args] });
+            continue;
+          }
+
+          // modifiers and simple keys
+          const parts = [upper, ...rest.map((s) => s.toUpperCase())];
+          if (parts.includes('GUI')) commands.push({ type: 'MOD', args: ['GUI', ...parts.filter(p => p !== 'GUI')] });
+          else if (parts.includes('WINDOWS')) commands.push({ type: 'MOD', args: ['GUI', ...parts.filter(p => p !== 'WINDOWS')] });
+          else if (parts.includes('CTRL') || parts.includes('CONTROL') || parts.includes('ALT') || parts.includes('SHIFT')) {
+            commands.push({ type: 'MOD', args: parts });
+          } else if (SIMPLE_COMMANDS.has(upper)) {
+            commands.push({ type: upper, args: [] });
+          } else {
+            errors.push(`Line ${i + 1}: Unknown command '${cmd}'`);
+          }
+        }
+
+        return { commands, errors };
+      }
+
+      function generateArduinoSketch(ast, keyboardLayout, target) {
+        const lines = [emitHeader()];
+
+        for (const c of ast.commands) {
+          switch (c.type) {
+            case 'STRING':
+              lines.push(`  typeString(${JSON.stringify(c.args[0] ?? '')});\n`);
+              break;
+            case 'DELAY':
+              lines.push(`  delay(${c.args[0] ?? '0'});\n`);
+              break;
+            case 'MOD': {
+              const keys = (c.args || []).filter(Boolean);
+              const last = keys[keys.length - 1] ?? '';
+              const mods = keys.slice(0, -1).map(k => mapMod(k)).filter(Boolean);
+              for (const m of mods) lines.push(`  Keyboard.press(${m});\n`);
+              lines.push(`  Keyboard.press(${mapKey(last)});\n  delay(5);\n  Keyboard.releaseAll();\n`);
+              break;
+            }
+            default:
+              if (KEY_MAP[c.type]) lines.push(`  Keyboard.write(${KEY_MAP[c.type]});\n`);
+              else lines.push(`  // Unknown: ${c.type}\n`);
+          }
+        }
+
+        lines.push(emitFooter());
+        return lines.join('');
+      }
+
+      function emitHeader() {
+        return `#include <Keyboard.h>\n\nvoid typeString(const char* s){\n  while(*s){\n    if(*s=='\\n'){ Keyboard.write(KEY_RETURN); } else { Keyboard.write(*s); }\n    delay(5);\n    s++;\n  }\n}\n\nvoid setup(){\n  delay(1000);\n  Keyboard.begin();\n`;
+      }
+
+      function emitFooter() {
+        return `  Keyboard.end();\n}\n\nvoid loop(){}\n`;
+      }
+
+      function mapMod(k) {
+        if (k === 'CTRL' || k === 'CONTROL') return 'KEY_LEFT_CTRL';
+        if (k === 'ALT') return 'KEY_LEFT_ALT';
+        if (k === 'SHIFT') return 'KEY_LEFT_SHIFT';
+        if (k === 'GUI' || k === 'WINDOWS' || k === 'WIN') return 'KEY_LEFT_GUI';
+        return undefined;
+      }
+
+      function mapKey(k) {
+        if (KEY_MAP[k]) return KEY_MAP[k];
+        if (k && k.length === 1) return JSON.stringify(k);
+        return 'KEY_RETURN';
+      }
+
+      function updateOutput() {
+        const script = document.getElementById('scriptInput').value;
+        const layout = document.getElementById('layoutSelect').value;
+        const device = document.getElementById('deviceSelect').value;
+        
+        const ast = parseDuckyScript(script);
+        const code = generateArduinoSketch(ast, layout, device);
+        
+        document.getElementById('arduinoOutput').value = code;
+        
+        const errorsDiv = document.getElementById('errors');
+        if (ast.errors.length > 0) {
+          errorsDiv.style.display = 'block';
+          errorsDiv.innerHTML = ast.errors.map(er => `<div>${er}</div>`).join('');
+        } else {
+          errorsDiv.style.display = 'none';
+        }
+      }
+
+      function copyCode() {
+        const code = document.getElementById('arduinoOutput').value;
+        navigator.clipboard.writeText(code).then(() => {
+          // Simple feedback - could be enhanced with a toast
+          console.log('Code copied to clipboard');
+        });
+      }
+
+      function downloadCode() {
+        const code = document.getElementById('arduinoOutput').value;
+        const blob = new Blob([code], { type: 'text/x-arduino' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'duckify_plus.ino';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function resetScript() {
+        document.getElementById('scriptInput').value = SAMPLE_SCRIPT;
+        updateOutput();
+      }
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', function() {
+        updateOutput();
+        
+        document.getElementById('scriptInput').addEventListener('input', updateOutput);
+        document.getElementById('layoutSelect').addEventListener('change', updateOutput);
+        document.getElementById('deviceSelect').addEventListener('change', updateOutput);
+      });
+    </script>
   </body>
-  </html>
+</html>
 
 
